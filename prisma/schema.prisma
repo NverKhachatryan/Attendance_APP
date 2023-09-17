@@ -28,6 +28,7 @@ model Attendance {
   date      String
   hours     Int
   studentId Int
+  subject   String
   student   Student  @relation(fields: [studentId], references: [id])
 }
 

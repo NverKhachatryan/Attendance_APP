@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AttendanceTable from "@/components/AttendanceTable";
 import { Button, Label, Modal, TextInput, Textarea } from "flowbite-react";
 import CustomModal from "@/components/CustomModal";
@@ -7,6 +7,7 @@ import DropDownTargetNarrative from "@/components/DropDownNarrative";
 import { GetServerSideProps } from "next";
 import { prisma } from "../../../lib/prisma";
 import { addClassToGroup } from "@/util";
+import { TabList, Tab, TabPanel, Tabs } from "react-tabs";
 
 export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const id = params?.groupId as string;
@@ -30,10 +31,12 @@ type Props = {
 };
 
 interface DayAttendance {
+  studentId: any;
   date: any;
   hours: number;
   day: number;
   present: boolean;
+  subject: string;
 }
 
 interface Student {
@@ -42,37 +45,56 @@ interface Student {
   attendances: DayAttendance[];
 }
 
+interface TabData {
+  name: string;
+  // Add other properties as needed
+}
+
 const StudentAttendancePage: React.FC<Props> = (props) => {
-  const student = props.drafts;
-  const students: Student[] = student;
+  const [students, setStudents] = useState<Student[]>(props.drafts);
   const router = useRouter();
   const { groupId } = router.query;
   const id = Number(groupId);
   const [show, setShow] = useState<boolean>(false);
   const [show1, setShow1] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("Total"); // 'total' is the default tab
-  const transformedStudents = students.map((student) => {
-    return {
-      ...student,
-      attendances: student.attendances.reduce<{ [key: string]: number }>((acc, attendance) => {
-        acc[attendance.date] = attendance.hours;
-        return acc;
-      }, {}),
-    };
-  });
 
   const maxLength = Math.max(...students.map((s) => s.attendances.length));
 
-  const [classAttendance, setClassAttendance] = useState<{
-    [key: string]: number[][];
-  }>({
-    Total: transformedStudents.map(() => new Array(maxLength).fill(0)),
-  });
+  const [classNames, setClassNames] = useState<string[]>(["Total"]); // Initial value with "Total" tab
 
-  const [classDates, setClassDates] = useState<string[]>([]);
+  const transformedStudents = useMemo(() => {
+    return students.map((student) => {
+      const attendancesBySubject: { [subject: string]: { date: string, hours: number }[] } = {};
+
+      // Iterate through the classNames (subjects) and populate attendances for each subject
+      classNames.forEach((subject) => {
+        const subjectAttendances = student.attendances.filter((attendance) => attendance?.subject === subject);
+        attendancesBySubject[subject] = subjectAttendances.map((attendance) => ({
+          date: attendance.date,
+          hours: attendance.hours,
+          studentId: attendance.studentId,
+        }));
+      });
+
+      return {
+        ...student,
+        attendances: attendancesBySubject,
+      };
+    });
+  }, [students, classNames]);
 
   const [studentName, setStudentName] = useState("");
   const [className, setClassName] = useState("");
+  const [classAttendance, setClassAttendance] = useState<{
+    [subject: string]: {
+      [month: string]: number[][];
+    };
+  }>({
+    Total: {
+      September: transformedStudents.map(() => new Array(maxLength).fill(0)),
+    },
+  });
 
   const fetchClassDates = async () => {
     try {
@@ -81,12 +103,30 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       );
       if (response.ok) {
         const data = await response.json();
-        setClassDates(data.classDates);
+        setClassNames((prev) => [
+          prev[0],
+          ...data?.students[0]?.group.subjects.map((item: any) => item?.name)
+        ]);
       }
     } catch (error) {
       console.error("Error fetching class dates and attendance:", error);
     }
   };
+
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch(`/api/getStudents?groupId=${id}`);
+      if (response.ok) {
+        const updatedStudents = await response.json();
+        setStudents(updatedStudents);
+      } else {
+        console.error("Error fetching students:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  };
+
 
   useEffect(() => {
     fetchClassDates();
@@ -103,10 +143,10 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
           body: JSON.stringify({ name: studentName, id }), // Send groupId as an integer
         });
         // After student creation is complete, you can perform any necessary actions
-        // For example, you can reset the form or update the UI
         setStudentName("");
         setShow(!show);
-        window.location.reload();
+        fetchStudents();
+
       } else {
         console.error("Invalid groupId:", groupId);
       }
@@ -121,21 +161,62 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
 
     try {
       const newClass = await addClassToGroup(id, className);
-      // Handle success, e.g., show a success message or update the UI
-      setClassAttendance((prevAttendance) => ({
-        ...prevAttendance,
-        [className]: transformedStudents.map(() =>
-          new Array(students[0].attendances.length).fill(0)
-        ),
-      }));
-      // setClassDates((prevDates) => [...prevDates, newClass.date]); // Add the date
-      setShow1(!show1);
-      setClassName("");
+
+      setClassName(""); // Clear the input field
+      setShow1(false);
+      router.reload();
     } catch (error) {
-      console.log(error);
+      console.error("Error adding class:", error);
       setClassName("");
     }
   };
+
+  const updateDaysAttendance = (
+    newAttendanceForActiveTab: number[][],
+    subject: string,
+    month: string
+  ) => {
+    setClassAttendance((prevAttendance) => ({
+      ...prevAttendance,
+      [subject]: {
+        ...prevAttendance[subject],
+        [month]: newAttendanceForActiveTab,
+      },
+    }));
+  };
+
+  const fetchData = async () => {
+    try {
+      // Make a request to your server to get the tab data
+      const response = await fetch("/api/getSubjectData"); // Adjust the endpoint URL
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch class data");
+      }
+
+      const data: TabData[] = await response.json();
+
+      const updatedClassAttendance: {
+        [subject: string]: {
+          [month: string]: number[][];
+        };
+      } = { ...classAttendance };
+
+      data.forEach((tabData) => {
+        updatedClassAttendance[tabData.name] = {
+          September: transformedStudents.map(() => new Array(maxLength).fill(0)),
+          // Add more months as needed
+        };
+      });
+
+      setClassAttendance(updatedClassAttendance);
+    } catch (error) {
+      console.error("Error fetching class data:", error);
+    }
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <div className="p-4">
@@ -233,15 +314,51 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       </div>
 
       <div className="flex flex-col">
-        <div>
+        {/* <div>
           <AttendanceTable
             key={activeTab}
             title={`${activeTab} Class Attendance`}
             studentName={transformedStudents}
             daysAttendance={classAttendance[activeTab]}
-            setDaysAttendance={(day) => day}
+            setDaysAttendance={updateDaysAttendance}
           />
-        </div>
+        </div> */}
+        <Tabs>
+          <TabList>
+            {classNames.map((className) => (
+              <Tab
+                key={className}
+                onClick={() => {
+                  setActiveTab(className);
+                }}
+              >
+                {className}
+              </Tab>
+            ))}
+          </TabList>
+
+          {Object.entries(classAttendance).map(([subject, monthsData]) =>
+            Object.entries(monthsData).map(([month, daysAttendance]) => (
+              <TabPanel key={`${subject}-${month}`}>
+                {(
+                  <>
+                    <AttendanceTable
+                      title={subject}
+                      activeTab={activeTab}
+                      studentName={transformedStudents}
+                      daysAttendance={daysAttendance}
+                      setDaysAttendance={(newAttendance) =>
+                        updateDaysAttendance(newAttendance, subject, month)
+                      }
+                    />
+                  </>
+                )}
+              </TabPanel>
+            ))
+          )}
+
+        </Tabs>
+
       </div>
     </div>
   );

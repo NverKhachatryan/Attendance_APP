@@ -1,4 +1,3 @@
-// api.js (or any appropriate file)
 export async function addClassToGroup(groupId: number, className: string) {
     try {
       const response = await fetch("/api/createClass", {
