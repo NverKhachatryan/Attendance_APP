@@ -8,8 +8,19 @@ import { GetServerSideProps } from "next";
 import { prisma } from "../../../lib/prisma";
 import { addClassToGroup } from "@/util";
 import { TabList, Tab, TabPanel, Tabs } from "react-tabs";
+import { useSession } from "next-auth/react";
+import { getToken } from "next-auth/jwt";
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ req, res, params }) => {
+  const token = await getToken({ req })
+  if (!token) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
   const id = params?.groupId as string;
   const drafts = await prisma.student.findMany({
     where: {
@@ -51,6 +62,7 @@ interface TabData {
 }
 
 const StudentAttendancePage: React.FC<Props> = (props) => {
+
   const [students, setStudents] = useState<Student[]>(props.drafts);
   const router = useRouter();
   const { groupId } = router.query;
@@ -103,10 +115,13 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       );
       if (response.ok) {
         const data = await response.json();
-        setClassNames((prev) => [
-          prev[0],
-          ...data?.students[0]?.group.subjects.map((item: any) => item?.name)
-        ]);
+        if(data.students[0]){
+          setClassNames((prev) => [
+            prev[0],
+            ...data?.students[0]?.group.subjects.map((item: any) => item?.name)
+          ]);
+        }
+      
       }
     } catch (error) {
       console.error("Error fetching class dates and attendance:", error);
@@ -314,15 +329,6 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       </div>
 
       <div className="flex flex-col">
-        {/* <div>
-          <AttendanceTable
-            key={activeTab}
-            title={`${activeTab} Class Attendance`}
-            studentName={transformedStudents}
-            daysAttendance={classAttendance[activeTab]}
-            setDaysAttendance={updateDaysAttendance}
-          />
-        </div> */}
         <Tabs>
           <TabList>
             {classNames.map((className) => (

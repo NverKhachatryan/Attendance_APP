@@ -5,8 +5,20 @@ import Link from "next/link";
 import { useState } from "react";
 import { GetServerSideProps } from "next";
 import { prisma } from "../../lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { getToken } from "next-auth/jwt";
+// import { authOptions } from "../pages/api/auth/[...nextauth]"
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+  const token = await getToken({ req })
+  if (!token) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
   const drafts = await prisma.group.findMany({
     where: {
       name: {},

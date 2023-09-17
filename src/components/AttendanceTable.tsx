@@ -49,11 +49,6 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   studentName,
   setDaysAttendance,
 }) => {
-  const initializeDaysAttendance = (students: any, columnDates: any) => {
-    return students.map(() => {
-      return columnDates.map(() => 0);
-    });
-  };
   const months = ["September", "October", "November", "December"];
   const [activeMonth, setActiveMonth] = useState<string>("September");
 
@@ -73,9 +68,6 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const [sortDescending, setSortDescending] = useState<boolean>(false);
   const [filterOption, setFilterOption] = useState<string>("Show All"); // Default to "Show All"
   const router = useRouter();
-  const [localDaysAttendance, setLocalDaysAttendance] = useState(
-    initializeDaysAttendance(studentName, columnDates)
-  );
 
   const handleHoursChange = (studentIndex: number, dayIndex: number, value: number) => {
     const updatedAttendance = [...daysAttendance];
@@ -200,6 +192,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
     return result;
   }, [studentName, sortDescending, filterOption]);
+  
   return (
     <div className="p-4">
       {activeTab === "Total" ? (
@@ -291,7 +284,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                     <table className="w-full border">
                       <thead>
                         <tr>
-                          <th className="border p-2"></th>
+                          <th className="border p-2">Names</th>
                           {columnDates.map((date, columnIndex) => (
                             <th key={columnIndex} className="border p-2 text-center">
                               {date}
@@ -309,7 +302,6 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                                   (entry) => entry.date === date
                                 )?.hours || 0
                               );
-
                               return (
                                 <td
                                   key={columnIndex}
