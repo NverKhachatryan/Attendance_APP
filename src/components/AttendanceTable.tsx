@@ -53,13 +53,46 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   studentName,
   setDaysAttendance,
 }) => {
-  const months = ["September", "October", "November", "December"];
-  const [activeMonth, setActiveMonth] = useState<string>("September");
+  // const months = ["September", "October", "November", "December"];
+  const getCurrentMonth = () => {
+    const currentDate = new Date();
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return monthNames[currentDate.getMonth()];
+  };
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const [activeMonth, setActiveMonth] = useState<string>(getCurrentMonth());
   const [student, setStudent] = useState(studentName);
   const [show, setShow] = useState<boolean>(false);
 
   const monthPrefix =
-    (months.indexOf(activeMonth) + 9).toString().padStart(2, "0") + "-"; // Convert index to "09-", "10-", etc.
+    (months.indexOf(activeMonth) + 1).toString().padStart(2, "0") + "-"; // Convert index to "09-", "10-", etc.
 
   const [columnDates, setColumnDates] = useState<string[]>(
     Array.from(
@@ -75,6 +108,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   );
   const [newDate, setNewDate] = useState<string>("");
   const [sortDescending, setSortDescending] = useState<boolean>(false);
+  const [ok, setOK] = useState<boolean>(false);
   const [filterOption, setFilterOption] = useState<string>("Show All"); // Default to "Show All"
   const [selectedStudent, setSelectedStudent] = useState(student[0]);
   const router = useRouter();
@@ -89,6 +123,10 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     setDaysAttendance(updatedAttendance);
   };
 
+  const handleTabsClick = (month: string) => {
+    setActiveMonth(month);
+    setColumnDates((prev) => [...prev]);
+  };
   const syncAttendanceWithServer = async () => {
     try {
       const attendanceUpdates: AttendanceUpdate[] = [];
@@ -220,9 +258,8 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
       studentId: student.id,
       isPresent: !student.isPresent, // Toggle the value
     });
-
+    router.reload();
     // Handle the updatedStudent response as needed
-    console.log("Updated Student:", updatedStudent.data);
   };
 
   const handleDeleteClick = async (student: any) => {
@@ -342,13 +379,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
         <Tabs>
           <TabList>
             {months.map((month) => (
-              <Tab
-                key={month}
-                onClick={() => {
-                  setActiveMonth(month);
-                  setColumnDates((prev) => [...prev]);
-                }}
-              >
+              <Tab key={month} onClick={() => handleTabsClick(month)}>
                 {month}
               </Tab>
             ))}
@@ -357,7 +388,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
           {months.map((month, index) => (
             <TabPanel key={month}>
-              {month === activeMonth && (
+              {month == activeMonth && (
                 <>
                   <input
                     type="date"

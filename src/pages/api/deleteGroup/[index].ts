@@ -10,14 +10,24 @@ export default async function handler(
     const groupId = Number(req.query.index);
 
     try {
+      // Delete students belonging to the group
       await prisma.student.deleteMany({
         where: {
           groupId: groupId,
         },
-      }),
-        await prisma.group.delete({
-          where: { id: groupId },
-        });
+      });
+
+      // Delete subjects belonging to the group
+      await prisma.subject.deleteMany({
+        where: {
+          groupId: groupId,
+        },
+      });
+
+      // Finally, delete the group itself
+      await prisma.group.delete({
+        where: { id: groupId },
+      });
 
       res.status(204).end();
     } catch (error) {
