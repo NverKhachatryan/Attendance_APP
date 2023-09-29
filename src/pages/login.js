@@ -95,9 +95,6 @@ const router = useRouter(); // Initialize the router hook in your component
                 setPassword(e.target.value);
               }}
             />
-            <p className="text-red-500 text-xs italic">
-              Please choose a password.
-            </p>
           </div>
           <div className="flex items-center justify-between">
             <button
@@ -107,12 +104,6 @@ const router = useRouter(); // Initialize the router hook in your component
             >
               {isLoading ? "Loading..." : "Sign In"}
             </button>
-            <a
-              className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
-              href="#"
-            >
-              Forgot Password?
-            </a>
           </div>
         </form>
       </div>
