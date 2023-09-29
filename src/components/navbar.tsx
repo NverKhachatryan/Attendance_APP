@@ -31,7 +31,7 @@ export default function Navbar() {
         </Menu>
 
         <div className="nav__item hidden space-x-4  lg:flex">
-          {status === "loading" && <img src="https://scontent.fevn6-1.fna.fbcdn.net/v/t1.30497-1/143086968_2856368904622192_1959732218791162458_n.png?stp=cp0_dst-png_p80x80&_nc_cat=1&ccb=1-7&_nc_sid=7206a8&_nc_ohc=OlcdNEVMsJMAX9O724Y&_nc_ht=scontent.fevn6-1.fna&oh=00_AfCkxF754_le5PfG2AszqctwWs85BVNajnt4AyI3uZC4Pw&oe=652D16B8" />}
+          {status === "loading" && <img className="w-12 h-12" src="https://scontent.fevn6-1.fna.fbcdn.net/v/t1.30497-1/143086968_2856368904622192_1959732218791162458_n.png?stp=cp0_dst-png_p80x80&_nc_cat=1&ccb=1-7&_nc_sid=7206a8&_nc_ohc=OlcdNEVMsJMAX9O724Y&_nc_ht=scontent.fevn6-1.fna&oh=00_AfCkxF754_le5PfG2AszqctwWs85BVNajnt4AyI3uZC4Pw&oe=652D16B8" />}
           {status === "authenticated" && (
             <Dropdown
               arrowIcon={false}

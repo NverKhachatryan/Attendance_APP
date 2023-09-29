@@ -11,8 +11,12 @@ import { TabList, Tab, TabPanel, Tabs } from "react-tabs";
 import { useSession } from "next-auth/react";
 import { getToken } from "next-auth/jwt";
 
-export const getServerSideProps: GetServerSideProps = async ({ req, res, params }) => {
-  const token = await getToken({ req })
+export const getServerSideProps: GetServerSideProps = async ({
+  req,
+  res,
+  params,
+}) => {
+  const token = await getToken({ req });
   if (!token) {
     return {
       redirect: {
@@ -53,6 +57,7 @@ interface DayAttendance {
 interface Student {
   id: number;
   name: string;
+  isPresent: boolean;
   attendances: DayAttendance[];
 }
 
@@ -62,7 +67,6 @@ interface TabData {
 }
 
 const StudentAttendancePage: React.FC<Props> = (props) => {
-
   const [students, setStudents] = useState<Student[]>(props.drafts);
   const router = useRouter();
   const { groupId } = router.query;
@@ -77,16 +81,22 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
 
   const transformedStudents = useMemo(() => {
     return students.map((student) => {
-      const attendancesBySubject: { [subject: string]: { date: string, hours: number }[] } = {};
+      const attendancesBySubject: {
+        [subject: string]: { date: string; hours: number }[];
+      } = {};
 
       // Iterate through the classNames (subjects) and populate attendances for each subject
       classNames.forEach((subject) => {
-        const subjectAttendances = student.attendances.filter((attendance) => attendance?.subject === subject);
-        attendancesBySubject[subject] = subjectAttendances.map((attendance) => ({
-          date: attendance.date,
-          hours: attendance.hours,
-          studentId: attendance.studentId,
-        }));
+        const subjectAttendances = student.attendances.filter(
+          (attendance) => attendance?.subject === subject
+        );
+        attendancesBySubject[subject] = subjectAttendances.map(
+          (attendance) => ({
+            date: attendance.date,
+            hours: attendance.hours,
+            studentId: attendance.studentId,
+          })
+        );
       });
 
       return {
@@ -115,13 +125,12 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       );
       if (response.ok) {
         const data = await response.json();
-        if(data.students[0]){
+        if (data.students[0]) {
           setClassNames((prev) => [
             prev[0],
-            ...data?.students[0]?.group.subjects.map((item: any) => item?.name)
+            ...data?.students[0]?.group.subjects.map((item: any) => item?.name),
           ]);
         }
-      
       }
     } catch (error) {
       console.error("Error fetching class dates and attendance:", error);
@@ -142,7 +151,6 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     }
   };
 
-
   useEffect(() => {
     fetchClassDates();
   }, []);
@@ -161,7 +169,6 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
         setStudentName("");
         setShow(!show);
         fetchStudents();
-
       } else {
         console.error("Invalid groupId:", groupId);
       }
@@ -219,7 +226,9 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
 
       data.forEach((tabData) => {
         updatedClassAttendance[tabData.name] = {
-          September: transformedStudents.map(() => new Array(maxLength).fill(0)),
+          September: transformedStudents.map(() =>
+            new Array(maxLength).fill(0)
+          ),
           // Add more months as needed
         };
       });
@@ -346,7 +355,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
           {Object.entries(classAttendance).map(([subject, monthsData]) =>
             Object.entries(monthsData).map(([month, daysAttendance]) => (
               <TabPanel key={`${subject}-${month}`}>
-                {(
+                {
                   <>
                     <AttendanceTable
                       title={subject}
@@ -358,13 +367,11 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
                       }
                     />
                   </>
-                )}
+                }
               </TabPanel>
             ))
           )}
-
         </Tabs>
-
       </div>
     </div>
   );

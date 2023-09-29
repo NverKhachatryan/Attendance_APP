@@ -2,6 +2,9 @@ import { useRouter } from "next/router";
 import React, { useEffect, useMemo, useState } from "react";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import axios from "axios";
+import CustomModal from "./CustomModal";
+import { Button } from "flowbite-react";
 
 interface DayAttendance {
   day: number;
@@ -11,8 +14,9 @@ interface DayAttendance {
 interface Student {
   id: number;
   name: string;
+  isPresent: boolean;
   attendances: {
-    [subject: string]: { date: string; hours: number; }[];
+    [subject: string]: { date: string; hours: number }[];
   };
 }
 
@@ -51,25 +55,35 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 }) => {
   const months = ["September", "October", "November", "December"];
   const [activeMonth, setActiveMonth] = useState<string>("September");
+  const [student, setStudent] = useState(studentName);
+  const [show, setShow] = useState<boolean>(false);
 
-  const monthPrefix = (months.indexOf(activeMonth) + 9).toString().padStart(2, '0') + "-"; // Convert index to "09-", "10-", etc.
+  const monthPrefix =
+    (months.indexOf(activeMonth) + 9).toString().padStart(2, "0") + "-"; // Convert index to "09-", "10-", etc.
 
-  const [columnDates, setColumnDates] = useState<string[]>(Array.from(
-    new Set(
-      studentName.flatMap((student) => {
-        const attendances = student.attendances[title] || {};
-        return Object.values(attendances)
-          .filter((record) => record.date.startsWith(monthPrefix))
-          .map((record) => record.date);
-      })
+  const [columnDates, setColumnDates] = useState<string[]>(
+    Array.from(
+      new Set(
+        studentName.flatMap((student) => {
+          const attendances = student.attendances[title] || {};
+          return Object.values(attendances)
+            .filter((record) => record.date.startsWith(monthPrefix))
+            .map((record) => record.date);
+        })
+      )
     )
-  ));
+  );
   const [newDate, setNewDate] = useState<string>("");
   const [sortDescending, setSortDescending] = useState<boolean>(false);
   const [filterOption, setFilterOption] = useState<string>("Show All"); // Default to "Show All"
+  const [selectedStudent, setSelectedStudent] = useState(student[0]);
   const router = useRouter();
 
-  const handleHoursChange = (studentIndex: number, dayIndex: number, value: number) => {
+  const handleHoursChange = (
+    studentIndex: number,
+    dayIndex: number,
+    value: number
+  ) => {
     const updatedAttendance = [...daysAttendance];
     updatedAttendance[studentIndex][dayIndex] = value;
     setDaysAttendance(updatedAttendance);
@@ -81,29 +95,29 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
       studentName.forEach((student, studentIndex) => {
         columnDates.forEach((date, columnIndex) => {
           const hours = daysAttendance[studentIndex][columnIndex];
-          if (hours > 0) { // Only include values greater than 0
+          if (hours > 0) {
+            // Only include values greater than 0
             attendanceUpdates.push({
               studentId: student.id,
               columnIndex: date,
               hours: hours,
-              subject: title
+              subject: title,
             });
           }
         });
       });
 
-      await fetch('/api/addStudentHours', {  // renamed for clarity
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ attendances: attendanceUpdates })
+      await fetch("/api/addStudentHours", {
+        // renamed for clarity
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attendances: attendanceUpdates }),
       });
-      router.reload();
+      setTimeout(() => router.reload(), 3000);
     } catch (error) {
       console.error("Error syncing attendance:", error);
     }
   };
-
-
 
   const addColumn = (date: string) => {
     const newDateMonth = date.slice(5, 10);
@@ -121,11 +135,13 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
       .map((dateObj) => dateObj.date); // Extract only the date property
 
     const data = Array.from(new Set(filteredDates));
-    console.log(data, "data");
     setColumnDates(data);
   }, [studentName, activeMonth]);
 
-  const getTotalHoursForSubject = (studentIndex: number, subject: string): number => {
+  const getTotalHoursForSubject = (
+    studentIndex: number,
+    subject: string
+  ): number => {
     const student = studentName[studentIndex];
     const attendances = student.attendances[subject];
 
@@ -134,7 +150,10 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     }
 
     // Calculate the total hours for the subject
-    const totalHours = attendances.reduce((acc, record) => acc + record.hours, 0);
+    const totalHours = attendances.reduce(
+      (acc, record) => acc + record.hours,
+      0
+    );
 
     return totalHours;
   };
@@ -145,7 +164,10 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     // Calculate the total hours across all subjects for the student
     const totalHours = subjects.reduce((acc, subject) => {
       const attendances = student.attendances[subject];
-      const subjectTotal = attendances.reduce((subjectAcc, record) => subjectAcc + record.hours, 0);
+      const subjectTotal = attendances.reduce(
+        (subjectAcc, record) => subjectAcc + record.hours,
+        0
+      );
       return acc + subjectTotal;
     }, 0);
 
@@ -192,7 +214,55 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
     return result;
   }, [studentName, sortDescending, filterOption]);
-  
+
+  const handleCheckboxChange = async (student: any) => {
+    const updatedStudent = await axios.post("/api/addIsPresent", {
+      studentId: student.id,
+      isPresent: !student.isPresent, // Toggle the value
+    });
+
+    // Handle the updatedStudent response as needed
+    console.log("Updated Student:", updatedStudent.data);
+  };
+
+  const handleDeleteClick = async (student: any) => {
+    try {
+      await axios.delete("/api/deleteStudent", {
+        data: { studentId: student },
+      });
+      router.reload();
+    } catch (error) {
+      console.error("Error deleting student:", error);
+    }
+  };
+
+  const handleEditClick = async (e: any) => {
+    e.preventDefault();
+    try {
+      const updatedStudent = await axios.post("/api/editStudent", {
+        studentId: selectedStudent.id,
+        selectedStudent: selectedStudent.name,
+      });
+      setShow(!show);
+      router.reload();
+    } catch (error) {
+      console.error("Error editing student:", error);
+    }
+  };
+
+  const handleEditModalOpen = (studentId: number) => {
+    const studentToEdit = student.filter(
+      (human) => human.id == Number(studentId)
+    );
+
+    if (studentToEdit) {
+      setSelectedStudent(studentToEdit[0]);
+      setShow(true);
+    } else {
+      console.error("Student not found");
+    }
+  };
+
   return (
     <div className="p-4">
       {activeTab === "Total" ? (
@@ -202,7 +272,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
               <button
                 onClick={() => setSortDescending(!sortDescending)}
                 className="ml-5 mb-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                >
+              >
                 {sortDescending ? "Sort Descending" : "Sort Ascending"}
               </button>
               <select
@@ -230,11 +300,36 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                     getTotalHoursForStudent(student) > 150
                       ? "bg-green-400"
                       : getTotalHoursForStudent(student) >= 100
-                        ? "bg-orange-400"
-                        : ""
+                      ? "bg-orange-400"
+                      : ""
                   }
                 >
-                  <td className="border p-2">{student.name}</td>
+                  <td className="flex justify-between p-2">
+                    <div>{student.name} </div>
+                    <div className="flex justify-start">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={student.isPresent}
+                          onChange={() => handleCheckboxChange(student)}
+                        />
+                        <span>{student.isPresent ? "Present" : "Absent"}</span>
+                      </label>
+
+                      <Button
+                        onClick={() => handleEditModalOpen(student.id)}
+                        className="bg-blue-500 mx-3"
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteClick(student.id)}
+                        className="bg-blue-500"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </td>
                   <td className="border p-2 text-center">
                     {getTotalHoursForStudent(student)}
                   </td>
@@ -279,14 +374,22 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                   >
                     Add Column
                   </button>
-                  <button onClick={syncAttendanceWithServer} className="ml-5 mb-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Save Changes</button>
+                  <button
+                    onClick={syncAttendanceWithServer}
+                    className="ml-5 mb-5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  >
+                    Save Changes
+                  </button>
                   {activeTab !== "Total" && (
                     <table className="w-full border">
                       <thead>
                         <tr>
                           <th className="border p-2">Names</th>
                           {columnDates.map((date, columnIndex) => (
-                            <th key={columnIndex} className="border p-2 text-center">
+                            <th
+                              key={columnIndex}
+                              className="border p-2 text-center"
+                            >
                               {date}
                             </th>
                           ))}
@@ -295,7 +398,9 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                       <tbody>
                         {studentName.map((studentAttendance, studentIndex) => (
                           <tr key={studentIndex}>
-                            <td className="border p-2">{studentAttendance.name}</td>
+                            <td className="border p-2">
+                              {studentAttendance.name}
+                            </td>
                             {columnDates.map((date, columnIndex) => {
                               const hours = Number(
                                 studentAttendance.attendances[title].find(
@@ -311,7 +416,11 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                                     type="number"
                                     defaultValue={hours}
                                     onChange={(e) => {
-                                      handleHoursChange(studentIndex, columnIndex, parseInt(e.target.value));
+                                      handleHoursChange(
+                                        studentIndex,
+                                        columnIndex,
+                                        parseInt(e.target.value)
+                                      );
                                     }}
                                     className="w-16 text-center"
                                   />
@@ -351,6 +460,44 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
           </TabPanel>
         </Tabs>
       )}
+      <CustomModal isOpen={show} onClose={() => setShow(false)} size={"medium"}>
+        <div className="px-6 py-6 lg:px-8">
+          <h3 className="mb-4 text-xl font-medium text-gray-900 dark:text-white">
+            Create a Student
+          </h3>
+          <form className="space-y-6" onSubmit={handleEditClick}>
+            <div>
+              <label
+                htmlFor="email"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >
+                Student Name
+              </label>
+              <input
+                type="text"
+                name="text"
+                id="email"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                placeholder="John Doe"
+                value={selectedStudent.name}
+                onChange={(e) => {
+                  setSelectedStudent((prevSelectedStudent) => ({
+                    ...prevSelectedStudent,
+                    name: e.target.value,
+                  }));
+                }}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+            >
+              Edit student name
+            </button>
+          </form>
+        </div>
+      </CustomModal>
     </div>
   );
 };
