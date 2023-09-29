@@ -168,7 +168,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
         // After student creation is complete, you can perform any necessary actions
         setStudentName("");
         setShow(!show);
-        fetchStudents();
+        window.location.reload();
       } else {
         console.error("Invalid groupId:", groupId);
       }

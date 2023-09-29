@@ -2,16 +2,22 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "../../../../lib/prisma";
 
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method === "DELETE") {
-    const  groupId = Number(req.query.index);
+    const groupId = Number(req.query.index);
 
     try {
-      await prisma.group.delete({
-        where: { id: groupId },
-      });
+      await prisma.student.deleteMany({
+        where: {
+          groupId: groupId,
+        },
+      }),
+        await prisma.group.delete({
+          where: { id: groupId },
+        });
 
       res.status(204).end();
     } catch (error) {
