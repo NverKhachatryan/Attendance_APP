@@ -21,7 +21,7 @@ const router = useRouter(); // Initialize the router hook in your component
     let res = await signIn("credentials", {
       email,
       password,
-      callbackUrl: `${process.env.NEXT_PUBLIC_NEXTAUTH_URL}`,
+      callbackUrl: `${process.env.NEXTAUTH_URL}`,
       redirect: false,
     });
 
