@@ -21,7 +21,7 @@ const router = useRouter(); // Initialize the router hook in your component
     let res = await signIn("credentials", {
       email,
       password,
-      callbackUrl: `${process.env.NEXTAUTH_URL}`,
+      callbackUrl: 'https://attendance-app-taupe.vercel.app',
       redirect: false,
     });
 
