@@ -317,7 +317,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       </CustomModal>
       <div className="flex justify-between">
         <h1 className="text-2xl font-semibold mb-4">
-          Student Attendance for Group {id}
+          Student Attendance
         </h1>
         <div className="flex flex-row">
           <button
