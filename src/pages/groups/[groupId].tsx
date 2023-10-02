@@ -62,6 +62,7 @@ interface Student {
 }
 
 interface TabData {
+  groupId: string | string[] | undefined;
   name: string;
   // Add other properties as needed
 }
@@ -114,7 +115,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     };
   }>({
     Total: {
-      September: transformedStudents.map(() => new Array(maxLength).fill(0)),
+      January: transformedStudents.map(() => new Array(maxLength).fill(0)),
     },
   });
 
@@ -137,19 +138,6 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     }
   };
 
-  const fetchStudents = async () => {
-    try {
-      const response = await fetch(`/api/getStudents?groupId=${id}`);
-      if (response.ok) {
-        const updatedStudents = await response.json();
-        setStudents(updatedStudents);
-      } else {
-        console.error("Error fetching students:", await response.text());
-      }
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    }
-  };
 
   useEffect(() => {
     fetchClassDates();
@@ -218,21 +206,23 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
 
       const data: TabData[] = await response.json();
 
+      const filteredData = data.filter((item) => item.groupId == groupId);
+
       const updatedClassAttendance: {
         [subject: string]: {
           [month: string]: number[][];
         };
       } = { ...classAttendance };
 
-      data.forEach((tabData) => {
+      filteredData.forEach((tabData) => {
         updatedClassAttendance[tabData.name] = {
-          September: transformedStudents.map(() =>
+          January: transformedStudents.map(() =>
             new Array(maxLength).fill(0)
           ),
-          // Add more months as needed
         };
       });
 
+      console.log(filteredData, "filteredData")
       setClassAttendance(updatedClassAttendance);
     } catch (error) {
       console.error("Error fetching class data:", error);

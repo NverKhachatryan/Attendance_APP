@@ -434,7 +434,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                             </td>
                             {columnDates.map((date, columnIndex) => {
                               const hours = Number(
-                                studentAttendance.attendances[title].find(
+                                studentAttendance?.attendances[title].find(
                                   (entry) => entry.date === date
                                 )?.hours || 0
                               );
