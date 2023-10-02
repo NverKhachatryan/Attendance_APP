@@ -88,7 +88,8 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     "December",
   ];
   const [activeMonth, setActiveMonth] = useState<string>(getCurrentMonth());
-  const [student, setStudent] = useState(studentName);
+  const sortedStudents = [...studentName].sort((a, b) => a.id - b.id);
+  const [student, setStudent] = useState(sortedStudents);
   const [show, setShow] = useState<boolean>(false);
 
   const monthPrefix =
@@ -97,7 +98,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const [columnDates, setColumnDates] = useState<string[]>(
     Array.from(
       new Set(
-        studentName.flatMap((student) => {
+        sortedStudents.flatMap((student) => {
           const attendances = student.attendances[title] || {};
           return Object.values(attendances)
             .filter((record) => record.date.startsWith(monthPrefix))
@@ -130,7 +131,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   const syncAttendanceWithServer = async () => {
     try {
       const attendanceUpdates: AttendanceUpdate[] = [];
-      studentName.forEach((student, studentIndex) => {
+      sortedStudents.forEach((student, studentIndex) => {
         columnDates.forEach((date, columnIndex) => {
           const hours = daysAttendance[studentIndex][columnIndex];
           if (hours > 0) {
@@ -164,7 +165,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
   useEffect(() => {
     // Extract all unique dates (subject names) from studentName
-    const allDates = studentName.flatMap((student) =>
+    const allDates = sortedStudents.flatMap((student) =>
       Object.values(student.attendances[title] || {})
     );
     const uniqueDates = Array.from(new Set(allDates)).sort();
@@ -242,7 +243,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
 
   // Apply sorting and filtering to student data
   const sortedAndFilteredStudents = useMemo(() => {
-    let result = studentName.slice(); // Copy the original data
+    let result = sortedStudents.slice(); // Copy the original data
 
     // Sort students
     result = sortStudents(result);
@@ -427,7 +428,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {studentName.map((studentAttendance, studentIndex) => (
+                        {sortedStudents.map((studentAttendance, studentIndex) => (
                           <tr key={studentIndex}>
                             <td className="border p-2">
                               {studentAttendance.name}
@@ -477,7 +478,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {studentName.map((student, studentIndex) => (
+                  {sortedStudents.map((student, studentIndex) => (
                     <tr key={student.id}>
                       <td className="border p-2">{student.name}</td>
                       <td className="border p-2 text-center">

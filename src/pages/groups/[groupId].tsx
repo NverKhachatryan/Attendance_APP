@@ -138,7 +138,6 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     }
   };
 
-
   useEffect(() => {
     fetchClassDates();
   }, []);
@@ -181,6 +180,27 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     }
   };
 
+  const handleDeleteClass = async (id: any) => {
+    try {
+      const response = await fetch("/api/deleteClass", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ groupId:id }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delet class to group");
+      }
+  
+      return await response.json();
+    } catch (error) {
+      throw new Error("Failed to delete class to group");
+    }
+  };
+
   const updateDaysAttendance = (
     newAttendanceForActiveTab: number[][],
     subject: string,
@@ -216,13 +236,10 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
 
       filteredData.forEach((tabData) => {
         updatedClassAttendance[tabData.name] = {
-          January: transformedStudents.map(() =>
-            new Array(maxLength).fill(0)
-          ),
+          January: transformedStudents.map(() => new Array(maxLength).fill(0)),
         };
       });
 
-      console.log(filteredData, "filteredData")
       setClassAttendance(updatedClassAttendance);
     } catch (error) {
       console.error("Error fetching class data:", error);
@@ -306,9 +323,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
         </div>
       </CustomModal>
       <div className="flex justify-between">
-        <h1 className="text-2xl font-semibold mb-4">
-          Student Attendance
-        </h1>
+        <h1 className="text-2xl font-semibold mb-4">Student Attendance</h1>
         <div className="flex flex-row">
           <button
             onClick={() => {
