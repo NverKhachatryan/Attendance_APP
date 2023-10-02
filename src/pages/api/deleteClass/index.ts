@@ -8,9 +8,8 @@ export default async function handler(
 ) {
   if (req.method === "DELETE") {
     try {
-      const id = req.body.groupId;
+      const id = req.body.id;
 
-      console.log(id, "aaaa")
 
       // Check if the subject (class) exists
       const existingSubject = await prisma.subject.findUnique({

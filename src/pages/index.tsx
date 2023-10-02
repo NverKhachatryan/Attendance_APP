@@ -37,6 +37,7 @@ type Props = {
 const HomePage: React.FC<Props> = (props) => {
   const groups = props?.drafts;
   const [show, setShow] = useState<boolean>(false);
+  const [show1, setShow1] = useState<boolean>(false);
   const [groupName, setGroupName] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
@@ -83,6 +84,23 @@ const HomePage: React.FC<Props> = (props) => {
       window.location.reload();
     } catch (error) {
       console.error("Error deleting group:", error);
+    }
+  };
+
+  // Example of making a DELETE request using fetch in a React component
+  const deleteAttendance = async () => {
+    try {
+      const response = await fetch("/api/deleteAttendance", {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        console.error("Failed to delete attendance history");
+      }
+    } catch (error) {
+      console.error("Error:", error);
     }
   };
 
@@ -156,6 +174,58 @@ const HomePage: React.FC<Props> = (props) => {
               {selectedGroupId ? "Update Group" : "Add Group"}
             </button>
           </form>
+        </div>
+      </CustomModal>
+      <div className="flex justify-end mt-5">
+        <button
+          onClick={() => setShow1(!show1)}
+          className="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        >
+          <p>Delete attendance history</p>
+        </button>
+      </div>
+      <CustomModal
+        isOpen={show1}
+        onClose={() => setShow1(!show1)}
+        size={"medium"}
+      >
+        <div className="relative bg-white rounded-lg dark:bg-gray-700">
+          <div className="p-6 text-center">
+            <svg
+              className="mx-auto mb-4 text-gray-400 w-12 h-12 dark:text-gray-200"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 20 20"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
+            </svg>
+            <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+              Are you sure you want to delete this product?
+            </h3>
+            <button
+              data-modal-hide="popup-modal"
+              type="button"
+              onClick={deleteAttendance}
+              className="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
+            >
+              Yes, I'm sure
+            </button>
+            <button
+              data-modal-hide="popup-modal"
+              type="button"
+              onClick={() => setShow1(!show1)}
+              className="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+            >
+              No, cancel
+            </button>
+          </div>
         </div>
       </CustomModal>
     </div>

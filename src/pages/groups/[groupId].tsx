@@ -109,6 +109,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
 
   const [studentName, setStudentName] = useState("");
   const [className, setClassName] = useState("");
+  const [subjectName, setSubjectName] = useState("");
   const [classAttendance, setClassAttendance] = useState<{
     [subject: string]: {
       [month: string]: number[][];
@@ -169,7 +170,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     e.preventDefault();
 
     try {
-      const newClass = await addClassToGroup(id, className);
+      await addClassToGroup(id, className);
 
       setClassName(""); // Clear the input field
       setShow1(false);
@@ -180,22 +181,52 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
     }
   };
 
-  const handleDeleteClass = async (id: any) => {
+  const handleGetClass = async (id: any) => {
     try {
-      const response = await fetch("/api/deleteClass", {
-        method: "DELETE",
+      const response = await fetch("/api/getClassData", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ groupId:id }),
+        body: JSON.stringify({ groupId: id }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delet class to group");
+        throw new Error(errorData.error || "Failed to get class data to group");
       }
-  
-      return await response.json();
+      const res = await response.json();
+      setSubjectName(res);
+      return res;
+    } catch (error) {
+      throw new Error("Failed to get class to group");
+    }
+  };
+
+  const handleDeleteClass = async (id: string) => {
+    try {
+      const activeSubject =
+        subjectName && Array.isArray(subjectName)
+          ? subjectName.find((subject) => subject.name === activeTab)
+          : null;
+      if (activeSubject && activeSubject.name === id) {
+        const response = await fetch("/api/deleteClass", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: activeSubject.id }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delet class to group");
+        }
+        router.reload();
+        return await response.json();
+      } else {
+        return;
+      }
     } catch (error) {
       throw new Error("Failed to delete class to group");
     }
@@ -245,8 +276,10 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       console.error("Error fetching class data:", error);
     }
   };
+
   useEffect(() => {
     fetchData();
+    handleGetClass(groupId);
   }, []);
 
   return (
@@ -343,6 +376,11 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
       </div>
 
       <div className="flex flex-col">
+        <div className="flex justify-start">
+          <Button className="bg-red-400 mb-5" onClick={() => handleDeleteClass(activeTab)}>
+            Delete Subject
+          </Button>
+        </div>
         <Tabs>
           <TabList>
             {classNames.map((className) => (
