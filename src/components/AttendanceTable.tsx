@@ -181,7 +181,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     studentIndex: number,
     subject: string
   ): number => {
-    const student = studentName[studentIndex];
+    const student = sortedStudents[studentIndex];
     const attendances = student.attendances[subject];
 
     if (!attendances) {

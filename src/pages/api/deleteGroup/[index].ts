@@ -1,4 +1,3 @@
-// pages/api/deleteGroup/[groupId].js
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "../../../../lib/prisma";
 
@@ -10,6 +9,15 @@ export default async function handler(
     const groupId = Number(req.query.index);
 
     try {
+      // Delete attendance records belonging to the group's students
+      await prisma.attendance.deleteMany({
+        where: {
+          student: {
+            groupId: groupId,
+          },
+        },
+      });
+
       // Delete students belonging to the group
       await prisma.student.deleteMany({
         where: {
