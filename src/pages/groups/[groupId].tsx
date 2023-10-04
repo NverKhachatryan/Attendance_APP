@@ -81,31 +81,29 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
   const [classNames, setClassNames] = useState<string[]>(["Total"]); // Initial value with "Total" tab
 
   const transformedStudents = useMemo(() => {
-    return students.map((student) => {
-      const attendancesBySubject: {
-        [subject: string]: { date: string; hours: number }[];
-      } = {};
+  return students.map((student) => {
+    const attendancesBySubject: {
+      [subject: string]: { date: string; hours: number }[];
+    } = {};
 
-      // Iterate through the classNames (subjects) and populate attendances for each subject
-      classNames.forEach((subject) => {
-        const subjectAttendances = student.attendances.filter(
-          (attendance) => attendance?.subject === subject
-        );
-        attendancesBySubject[subject] = subjectAttendances.map(
-          (attendance) => ({
-            date: attendance.date,
-            hours: attendance.hours,
-            studentId: attendance.studentId,
-          })
-        );
-      });
+    classNames.forEach((subject) => {
+      const subjectAttendances = student.attendances
+        .filter((attendance) => attendance?.subject === subject)
+        .sort((a: { date: string }, b: { date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      return {
-        ...student,
-        attendances: attendancesBySubject,
-      };
+      attendancesBySubject[subject] = subjectAttendances.map((attendance) => ({
+        date: attendance.date,
+        hours: attendance.hours,
+        studentId: attendance.studentId,
+      }));
     });
-  }, [students, classNames]);
+
+    return {
+      ...student,
+      attendances: attendancesBySubject,
+    };
+  });
+}, [students, classNames]);
 
   const [studentName, setStudentName] = useState("");
   const [className, setClassName] = useState("");
@@ -406,7 +404,7 @@ const StudentAttendancePage: React.FC<Props> = (props) => {
                       activeTab={activeTab}
                       studentName={transformedStudents}
                       daysAttendance={daysAttendance}
-                      setDaysAttendance={(newAttendance: number[][]) =>
+                      setDaysAttendance={(newAttendance) =>
                         updateDaysAttendance(newAttendance, subject, month)
                       }
                     />

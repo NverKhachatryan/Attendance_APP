@@ -53,7 +53,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   studentName,
   setDaysAttendance,
 }) => {
-    const getCurrentMonth = () => {
+  const getCurrentMonth = () => {
     const currentDate = new Date();
     const monthNames = [
       "January",
@@ -117,16 +117,34 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     dayIndex: number,
     value: number
   ) => {
-    const updatedAttendance = [...daysAttendance];
-    updatedAttendance[studentIndex][dayIndex] = value;
-    setDaysAttendance(updatedAttendance);
     setStudent((prevStudents) => {
       const updatedStudents = [...prevStudents];
-      updatedStudents[studentIndex].attendances[title][dayIndex].hours = value;
+      const title = activeTab;
+      const date = columnDates[dayIndex];
+
+      // Check if the attendance for the given date exists
+      const existingAttendance = updatedStudents[studentIndex].attendances[title].find(entry => entry.date === date);
+  
+      if (existingAttendance) {
+        // Update existing attendance entry
+        existingAttendance.hours = value;
+      } else {
+        // Create a new attendance entry
+        updatedStudents[studentIndex].attendances[title].push({
+          date,
+          hours: value,
+        });
+      }
+  
       return updatedStudents;
     });
+
+    const updatedAttendance = [...daysAttendance];
+    updatedAttendance[studentIndex][dayIndex] = value;
+
+    setDaysAttendance(updatedAttendance);
   };
-  
+
   const handleTabsClick = (month: string) => {
     setActiveMonth(month);
     setColumnDates((prev) => [...prev]);
@@ -303,7 +321,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
       console.error("Student not found");
     }
   };
-
+  
   return (
     <div className="p-4">
       {activeTab === "Total" ? (
@@ -431,39 +449,41 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {sortedStudents.map((studentAttendance, studentIndex) => (
-                          <tr key={studentIndex}>
-                            <td className="border p-2">
-                              {studentAttendance.name}
-                            </td>
-                            {columnDates.map((date, columnIndex) => {
-                              const hours = Number(
-                                studentAttendance?.attendances[title].find(
-                                  (entry) => entry.date === date
-                                )?.hours || 0
-                              );
-                              return (
-                                <td
-                                  key={columnIndex}
-                                  className="border p-2 text-center"
-                                >
-                                  <input
-                                    type="number"
-                                    value={hours}
-                                    onChange={(e) => {
-                                      handleHoursChange(
-                                        studentIndex,
-                                        columnIndex,
-                                        parseInt(e.target.value)
-                                      );
-                                    }}
-                                    className="w-16 text-center"
-                                  />
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
+                        {sortedStudents.map(
+                          (studentAttendance, studentIndex) => (
+                            <tr key={studentAttendance.id}>
+                              <td className="border p-2">
+                                {studentAttendance.name}
+                              </td>
+                              {columnDates.map((date, columnIndex) => {
+                                const hours = Number(
+                                  studentAttendance?.attendances[title].find(
+                                    (entry) => entry.date === date
+                                  )?.hours || 0
+                                );
+                                return (
+                                  <td
+                                    key={columnIndex}
+                                    className="border p-2 text-center"
+                                  >
+                                    <input
+                                      type="number"
+                                      value={hours}
+                                      onChange={(e) => {
+                                        handleHoursChange(
+                                          studentIndex,
+                                          columnIndex,
+                                          parseInt(e.target.value)
+                                        );
+                                      }}
+                                      className="w-16 text-center"
+                                    />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          )
+                        )}
                       </tbody>
                     </table>
                   )}
