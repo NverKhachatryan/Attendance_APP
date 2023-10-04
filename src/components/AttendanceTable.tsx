@@ -53,8 +53,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   studentName,
   setDaysAttendance,
 }) => {
-  // const months = ["September", "October", "November", "December"];
-  const getCurrentMonth = () => {
+    const getCurrentMonth = () => {
     const currentDate = new Date();
     const monthNames = [
       "January",
@@ -109,7 +108,6 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
   );
   const [newDate, setNewDate] = useState<string>("");
   const [sortDescending, setSortDescending] = useState<boolean>(false);
-  const [ok, setOK] = useState<boolean>(false);
   const [filterOption, setFilterOption] = useState<string>("Show All"); // Default to "Show All"
   const [selectedStudent, setSelectedStudent] = useState(student[0]);
   const router = useRouter();
@@ -122,8 +120,13 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     const updatedAttendance = [...daysAttendance];
     updatedAttendance[studentIndex][dayIndex] = value;
     setDaysAttendance(updatedAttendance);
+    setStudent((prevStudents) => {
+      const updatedStudents = [...prevStudents];
+      updatedStudents[studentIndex].attendances[title][dayIndex].hours = value;
+      return updatedStudents;
+    });
   };
-
+  
   const handleTabsClick = (month: string) => {
     setActiveMonth(month);
     setColumnDates((prev) => [...prev]);
@@ -446,7 +449,7 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
                                 >
                                   <input
                                     type="number"
-                                    defaultValue={hours}
+                                    value={hours}
                                     onChange={(e) => {
                                       handleHoursChange(
                                         studentIndex,
