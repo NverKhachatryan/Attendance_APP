@@ -1,4 +1,3 @@
-// pages/api/addStudentHours.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "../../../../lib/prisma"; // Import your Prisma client
 
@@ -32,16 +31,32 @@ export default async function handler(
           return res.status(500).json({ error: "Invalid student attendances" });
         }
 
-        await prisma.attendance.create({
-          data: {
-            date: columnIndex, // You may need to specify the date
-            hours: hours, // Update the hours for this attendance record
-            student: {
-              connect: { id: studentId }, // Associate the attendance with the student
+        const existingAttendance = student.attendances.find(
+          (attendance) => attendance.date === columnIndex
+        );
+
+        if (existingAttendance) {
+          // If an attendance record for the given date already exists, update it
+          await prisma.attendance.update({
+            where: { id: existingAttendance.id },
+            data: {
+              hours: hours, // Update the hours for this attendance record
+              subject: subject,
             },
-            subject: subject
-          },
-        });
+          });
+        } else {
+          // If no attendance record for the given date exists, create a new one
+          await prisma.attendance.create({
+            data: {
+              date: columnIndex,
+              hours: hours,
+              student: {
+                connect: { id: studentId },
+              },
+              subject: subject,
+            },
+          });
+        }
       }
       res.status(200).json({ message: "Hours added successfully" });
     } catch (error) {
