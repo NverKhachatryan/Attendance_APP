@@ -155,7 +155,6 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
       sortedStudents.forEach((student, studentIndex) => {
         columnDates.forEach((date, columnIndex) => {
           const hours = daysAttendance[studentIndex][columnIndex];
-          if (hours > 0) {
             // Only include values greater than 0
             attendanceUpdates.push({
               studentId: student.id,
@@ -163,7 +162,6 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
               hours: hours,
               subject: title,
             });
-          }
         });
       });
 
