@@ -156,12 +156,14 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
         columnDates.forEach((date, columnIndex) => {
           const hours = daysAttendance[studentIndex][columnIndex];
             // Only include values greater than 0
+            if (hours > 0) {
             attendanceUpdates.push({
               studentId: student.id,
               columnIndex: date,
               hours: hours,
               subject: title,
             });
+          }
         });
       });
 
